@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>BARTA | Secure Gaming Comms</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         html, body { 
             background-color: #050505; color: white; font-family: 'Segoe UI', sans-serif; 
@@ -16,7 +16,7 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: black; display: flex; flex-direction: column;
             justify-content: center; align-items: center; z-index: 9999;
-            transition: opacity 1s ease-out, visibility 1s;
+            transition: opacity 1s ease-out;
         }
         .blinking-logo {
             font-size: 5rem; font-weight: 900; color: #FF0033;
@@ -25,13 +25,9 @@
             text-shadow: 0 0 20px rgba(255, 0, 51, 0.7);
         }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.1; } }
-        .loading-bar { width: 200px; height: 2px; background: #222; margin-top: 20px; overflow: hidden; }
-        .loading-progress { width: 100%; height: 100%; background: #FF0033; animation: load 2.5s ease-in-out forwards; }
-        @keyframes load { 0% { transform: translateX(-100%); } 100% { transform: translateX(0); } }
         .gaming-border { border: 2px solid #FF0033; clip-path: polygon(5% 0, 100% 0, 100% 90%, 95% 100%, 0 100%, 0 10%); }
         .sharp-panel { background: rgba(20, 20, 20, 0.9); border: 1px solid rgba(255, 0, 51, 0.3); }
         video { width: 100%; border-radius: 4px; background: #111; transform: scaleX(-1); border: 1px solid #333; height: 220px; object-fit: cover; }
-        .screen-share video { transform: none !important; }
         body.loading { overflow: hidden !important; height: 100vh; }
     </style>
 </head>
@@ -40,7 +36,6 @@
     <div id="splash-screen">
         <div class="blinking-logo">BARTA</div>
         <div class="text-[10px] tracking-[0.5em] text-zinc-500 mt-4 uppercase">Initializing Secure Protocol</div>
-        <div class="loading-bar"><div class="loading-progress"></div></div>
     </div>
 
     <div id="main-content" class="max-w-6xl mx-auto p-4 md:p-6 opacity-0 transition-opacity duration-1000">
@@ -48,22 +43,22 @@
             <h1 class="text-3xl md:text-4xl font-black tracking-tighter text-red-600 italic">BARTA</h1>
             <div class="text-right">
                 <p class="text-[10px] text-gray-400 uppercase">Status: <span id="status" class="text-yellow-500">Offline</span></p>
-                <p id="display-id" class="font-mono text-white text-sm font-bold uppercase underline tracking-widest">Awaiting ID</p>
+                <p id="display-id" class="font-mono text-white text-sm font-bold uppercase tracking-widest">Awaiting ID</p>
             </div>
         </header>
 
         <div class="grid grid-cols-12 gap-6">
             <div class="col-span-12 md:col-span-4 lg:col-span-3 space-y-4">
                 <div class="sharp-panel p-4">
-                    <h3 class="text-xs uppercase font-bold text-red-500 mb-3 underline tracking-widest">1. Set My Identity</h3>
+                    <h3 class="text-xs uppercase font-bold text-red-500 mb-3 underline">1. Set My Identity</h3>
                     <input id="my-custom-id" type="text" placeholder="Enter My Code" class="w-full bg-black border border-zinc-800 p-2 mb-2 text-sm text-white uppercase outline-none focus:border-red-600 font-mono">
-                    <button onclick="initializePeer()" class="w-full bg-white text-black hover:bg-red-600 hover:text-white font-bold py-2 transition uppercase text-xs">Authorize My ID</button>
+                    <button id="auth-btn" onclick="initializePeer()" class="w-full bg-white text-black hover:bg-red-600 hover:text-white font-bold py-2 transition uppercase text-xs">Authorize My ID</button>
                 </div>
                 <div class="sharp-panel p-4">
-                    <h3 class="text-xs uppercase font-bold text-red-500 mb-3 underline tracking-widest">2. Link To Friend</h3>
+                    <h3 class="text-xs uppercase font-bold text-red-500 mb-3 underline">2. Link To Friend</h3>
                     <input id="remote-id" type="text" placeholder="Friend's Code" class="w-full bg-black border border-zinc-800 p-2 mb-2 text-sm text-white uppercase outline-none font-mono">
-                    <button onclick="startCall('video')" class="w-full bg-red-600 text-white font-bold py-2 uppercase text-xs mb-2 shadow-lg shadow-red-900/20 hover:bg-red-500">Establish Link</button>
-                    <button onclick="endCall()" class="w-full border border-red-600 text-red-600 font-bold py-2 uppercase text-xs hover:bg-red-600 hover:text-white transition">Terminate</button>
+                    <button onclick="startCall()" class="w-full bg-red-600 text-white font-bold py-2 uppercase text-xs mb-2 hover:bg-red-500">Establish Link</button>
+                    <button onclick="endCall()" class="w-full border border-red-600 text-red-600 font-bold py-2 uppercase text-xs hover:bg-red-600 hover:text-white">Terminate</button>
                 </div>
             </div>
 
@@ -71,89 +66,119 @@
                 <div class="gaming-border p-4 bg-zinc-900/40">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         <div class="relative">
-                            <p id="local-label" class="absolute top-2 left-2 z-10 text-[10px] bg-red-600 px-2 font-bold uppercase font-mono tracking-tighter">LOCAL_FEED</p>
+                            <p id="local-label" class="absolute top-2 left-2 z-10 text-[10px] bg-red-600 px-2 font-bold uppercase font-mono">LOCAL_FEED</p>
                             <video id="local-video" autoplay muted playsinline></video>
                         </div>
                         <div class="relative">
-                            <p id="remote-label" class="absolute top-2 left-2 z-10 text-[10px] bg-zinc-800 px-2 font-bold text-white uppercase font-mono tracking-tighter">REMOTE_FEED</p>
+                            <p id="remote-label" class="absolute top-2 left-2 z-10 text-[10px] bg-zinc-800 px-2 font-bold text-white uppercase font-mono">REMOTE_FEED</p>
                             <video id="remote-video" autoplay playsinline></video>
                         </div>
                     </div>
                     <div id="chat-box" class="h-48 overflow-y-auto bg-black border border-zinc-800 p-4 mb-4 font-mono text-xs text-green-500 border-l-4 border-l-red-600">
-                        <div>> SYSTEM: STANDBY. ENTER IDENTITY TO START.</div>
+                        <div>> SYSTEM: BOOT COMPLETE.</div>
                     </div>
                     <form onsubmit="event.preventDefault(); sendMsg();" class="flex gap-2">
-                        <input id="msg-input" type="text" placeholder="Enter encrypted message..." class="flex-1 bg-black border border-zinc-800 p-3 text-sm text-white outline-none focus:border-red-600">
-                        <button type="submit" class="bg-red-600 px-8 font-black italic hover:bg-red-500 transition">SEND</button>
+                        <input id="msg-input" type="text" placeholder="Message..." class="flex-1 bg-black border border-zinc-800 p-3 text-sm text-white outline-none focus:border-red-600">
+                        <button type="submit" class="bg-red-600 px-8 font-black italic hover:bg-red-500">SEND</button>
                     </form>
                 </div>
             </div>
         </div>
-        <footer class="mt-8 text-[10px] text-zinc-600 flex justify-between uppercase border-t border-zinc-900 pt-4 pb-12">
-            <span>Barta V6 | P2P Protocol</span>
-            <span>Created by: Babai</span>
-        </footer>
     </div>
 
     <script>
-        window.addEventListener('load', () => {
+        // Splash screen removal
+        window.onload = () => {
             setTimeout(() => {
                 document.getElementById('splash-screen').style.display = 'none';
                 document.getElementById('main-content').style.opacity = '1';
                 document.body.classList.remove('loading');
-            }, 3000);
-        });
+            }, 2500);
+        };
 
         let peer = null, dataConn = null, localStream = null;
-        const chatBox = document.getElementById('chat-box');
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
         function log(msg, color = "text-green-500") {
+            const chatBox = document.getElementById('chat-box');
             chatBox.innerHTML += `<div class="${color}">> ${msg}</div>`;
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        function initializePeer() {
-            const id = document.getElementById('my-custom-id').value.trim().toUpperCase();
-            if (!id) return alert("Please enter your secret identity code!");
-            
-            peer = new Peer(id);
-            peer.on('open', () => {
-                document.getElementById('display-id').innerText = id;
-                document.getElementById('local-label').innerText = id; // User Identity as Local Window Name
-                document.getElementById('status').innerText = "ONLINE";
-                log("IDENTITY AUTHORIZED: " + id);
-            });
+        async function initializePeer() {
+            const btn = document.getElementById('auth-btn');
+            const idInput = document.getElementById('my-custom-id');
+            const id = idInput.value.trim().toUpperCase();
 
-            peer.on('connection', conn => {
-                dataConn = conn;
-                document.getElementById('remote-label').innerText = conn.peer; // Friend Identity as Remote Window Name
-                setupDataHandlers();
-            });
+            if (!id) {
+                alert("Identity Code Required.");
+                return;
+            }
 
-            peer.on('call', call => {
-                document.getElementById('remote-label').innerText = call.peer; // Friend Identity as Remote Window Name
-                navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(stream => {
-                    localStream = stream;
-                    document.getElementById('local-video').srcObject = stream;
-                    call.answer(stream);
-                    call.on('stream', rs => {
-                        document.getElementById('remote-video').srcObject = rs;
+            // Visual feedback
+            btn.innerText = "AUTHORIZING...";
+            btn.disabled = true;
+
+            try {
+                // Check if PeerJS is actually loaded
+                if (typeof Peer === 'undefined') {
+                    throw new Error("PeerJS Library not loaded. Check internet.");
+                }
+
+                if (peer) peer.destroy();
+
+                peer = new Peer(id);
+
+                peer.on('open', (confirmedId) => {
+                    document.getElementById('display-id').innerText = confirmedId;
+                    document.getElementById('local-label').innerText = confirmedId;
+                    document.getElementById('status').innerText = "ONLINE";
+                    document.getElementById('status').className = "text-green-500";
+                    btn.innerText = "AUTHORIZED";
+                    btn.className = "w-full bg-green-600 text-white font-bold py-2 uppercase text-xs";
+                    log("IDENTITY SECURED: " + confirmedId);
+                });
+
+                peer.on('error', (err) => {
+                    console.error(err);
+                    btn.innerText = "RETRY AUTHORIZE";
+                    btn.disabled = false;
+                    log("ERROR: " + err.type, "text-red-500");
+                    if(err.type === 'unavailable-id') alert("ID already taken!");
+                });
+
+                peer.on('connection', conn => {
+                    dataConn = conn;
+                    document.getElementById('remote-label').innerText = conn.peer;
+                    setupDataHandlers();
+                });
+
+                peer.on('call', call => {
+                    document.getElementById('remote-label').innerText = call.peer;
+                    navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(stream => {
+                        localStream = stream;
+                        document.getElementById('local-video').srcObject = stream;
+                        call.answer(stream);
+                        call.on('stream', rs => document.getElementById('remote-video').srcObject = rs);
                     });
                 });
-            });
+
+            } catch (e) {
+                alert(e.message);
+                btn.innerText = "AUTHORIZE MY ID";
+                btn.disabled = false;
+            }
         }
 
         function setupDataHandlers() {
             dataConn.on('data', data => log(`${dataConn.peer}: ${data}`, "text-red-400"));
+            dataConn.on('open', () => log("DATA CHANNEL OPENED", "text-blue-400"));
         }
 
         async function startCall() {
             const rid = document.getElementById('remote-id').value.trim().toUpperCase();
-            if (!rid) return alert("Enter the recipient's code!");
+            if (!rid || !peer) return alert("Authorize yourself and enter friend code!");
             
             document.getElementById('remote-label').innerText = rid;
-            
             dataConn = peer.connect(rid);
             setupDataHandlers();
 
@@ -161,19 +186,16 @@
                 localStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
                 document.getElementById('local-video').srcObject = localStream;
                 const call = peer.call(rid, localStream);
-                call.on('stream', rs => {
-                    document.getElementById('remote-video').srcObject = rs;
-                });
-                log("ESTABLISHING LINK TO: " + rid);
-            } catch (err) { log("ERR: " + err.message, "text-red-500"); }
+                call.on('stream', rs => document.getElementById('remote-video').srcObject = rs);
+                log("LINKING TO: " + rid);
+            } catch (err) { log("MEDIA ERROR: " + err.message, "text-red-500"); }
         }
 
         function sendMsg() {
             const input = document.getElementById('msg-input');
-            const msg = input.value;
-            if (msg && dataConn) {
-                dataConn.send(msg);
-                log("YOU: " + msg, "text-white");
+            if (input.value && dataConn && dataConn.open) {
+                dataConn.send(input.value);
+                log("YOU: " + input.value, "text-white");
                 input.value = '';
             }
         }
@@ -182,8 +204,7 @@
             if (localStream) localStream.getTracks().forEach(t => t.stop());
             document.getElementById('local-video').srcObject = null;
             document.getElementById('remote-video').srcObject = null;
-            document.getElementById('remote-label').innerText = "REMOTE_FEED";
-            log("CONNECTION TERMINATED.");
+            log("DISCONNECTED.");
         }
     </script>
 </body>
