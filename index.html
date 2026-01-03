@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>BARTA | Secure Gaming Comms</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -12,6 +12,12 @@
             margin: 0; padding: 0; width: 100%; min-height: 100%; overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
         }
+
+        /* FIX: Safe Area Padding for Notch/Camera Displays */
+        #main-content {
+            padding-top: calc(env(safe-area-inset-top) + 1rem);
+        }
+
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: black; display: flex; flex-direction: column;
@@ -109,7 +115,6 @@
         let peer = null, dataConn = null, localStream = null;
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        // Sound Engine
         function playSfx(freq, type, duration) {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -136,10 +141,8 @@
             const btn = document.getElementById('auth-btn');
             const id = document.getElementById('my-custom-id').value.trim().toUpperCase();
             if (!id) return alert("Code Required.");
-            
             btn.innerText = "AUTHORIZING...";
             btn.disabled = true;
-
             peer = new Peer(id);
             peer.on('open', (confirmedId) => {
                 document.getElementById('display-id').innerText = confirmedId;
@@ -150,18 +153,15 @@
                 connectSnd();
                 log("IDENTITY SECURED: " + confirmedId);
             });
-
             peer.on('connection', conn => {
                 dataConn = conn;
                 document.getElementById('remote-label').innerText = conn.peer;
                 setupDataHandlers();
                 connectSnd();
             });
-
             peer.on('call', call => {
                 document.getElementById('remote-label').innerText = call.peer;
                 notifySnd();
-                // Secure media access logic
                 navigator.mediaDevices.getUserMedia({video: true, audio: true})
                 .then(stream => {
                     localStream = stream;
@@ -170,25 +170,16 @@
                     call.on('stream', rs => document.getElementById('remote-video').srcObject = rs);
                 }).catch(e => {
                     log("REMOTE STREAM STARTED (No Local Camera)", "text-yellow-500");
-                    call.answer(); // Answer without stream if camera fails
+                    call.answer();
                     call.on('stream', rs => document.getElementById('remote-video').srcObject = rs);
                 });
-            });
-            
-            peer.on('error', (err) => {
-                btn.disabled = false;
-                btn.innerText = "RETRY AUTHORIZE";
-                log("PEER ERR: " + err.type, "text-red-500");
             });
         }
 
         function setupDataHandlers() {
             dataConn.on('data', data => {
-                if (data.file) {
-                    handleIncomingFile(data);
-                } else {
-                    log(`${dataConn.peer}: ${data}`, "text-red-400");
-                }
+                if (data.file) handleIncomingFile(data);
+                else log(`${dataConn.peer}: ${data}`, "text-red-400");
                 notifySnd();
             });
         }
@@ -238,7 +229,7 @@
                 call.on('stream', rs => { document.getElementById('remote-video').srcObject = rs; connectSnd(); });
             } catch (err) { 
                 log("CALLING WITHOUT CAMERA", "text-yellow-500");
-                const call = peer.call(rid, new MediaStream()); // Fallback for desktop "Object not found"
+                const call = peer.call(rid, new MediaStream());
                 call.on('stream', rs => { document.getElementById('remote-video').srcObject = rs; connectSnd(); });
             }
         }
