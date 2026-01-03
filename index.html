@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BARTA | Secure Gaming Comms</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        body { background-color: #050505; color: white; font-family: 'Segoe UI', sans-serif; }
+        .gaming-border {
+            border: 2px solid #FF0033;
+            clip-path: polygon(5% 0, 100% 0, 100% 90%, 95% 100%, 0 100%, 0 10%);
+        }
+        .sharp-panel {
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid rgba(255, 0, 51, 0.3);
+        }
+        video { width: 100%; border-radius: 4px; background: #111; transform: scaleX(-1); }
+    </style>
+</head>
+<body>
+    <div class="max-w-6xl mx-auto p-6">
+        <header class="flex justify-between items-center mb-8 border-b-2 border-red-600 pb-4">
+            <h1 class="text-4xl font-black tracking-tighter text-red-600">BARTA</h1>
+            <div class="text-right">
+                <p class="text-xs text-gray-400">YOUR ID:</p>
+                <p id="my-id" class="font-mono text-red-500 font-bold underline">Connecting...</p>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-12 gap-6">
+            <div class="col-span-12 md:col-span-3 sharp-panel p-4 h-fit">
+                <h3 class="text-xs uppercase font-bold text-gray-500 mb-4 tracking-widest">Active Ops</h3>
+                <input id="remote-id" type="text" placeholder="Enter Friend's ID" class="w-full bg-black border border-zinc-800 p-2 mb-2 text-sm focus:border-red-600 outline-none">
+                <button onclick="startCall()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 transition uppercase text-sm">Initiate Video</button>
+            </div>
+
+            <div class="col-span-12 md:col-span-9">
+                <div class="gaming-border p-4 bg-zinc-900/40">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <p class="text-[10px] text-red-500 uppercase mb-1 font-bold">Local_Feed</p>
+                            <video id="local-video" autoplay muted></video>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-red-500 uppercase mb-1 font-bold">Remote_Feed</p>
+                            <video id="remote-video" autoplay></video>
+                        </div>
+                    </div>
+                    
+                    <div id="chat-box" class="h-48 overflow-y-auto bg-black border border-zinc-800 p-4 mb-4 font-mono text-sm text-green-500">
+                        <div>> SYSTEM: BARTA Secure Channel Initialized...</div>
+                    </div>
+                    <div class="flex gap-2">
+                        <input id="msg-input" type="text" placeholder="Type message..." class="flex-1 bg-black border border-zinc-800 p-3 outline-none focus:border-red-600">
+                        <button onclick="sendMsg()" class="bg-red-600 px-6 font-black italic">SEND</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="mt-8 text-[10px] text-zinc-600 flex justify-between uppercase tracking-widest">
+            <span>Protocol: WebRTC/P2P</span>
+            <span>© 2026 Babai</span>
+        </footer>
+    </div>
+
+    <script>
+        let peer = new Peer();
+        let currentCall;
+        const localVideo = document.getElementById('local-video');
+        const remoteVideo = document.getElementById('remote-video');
+
+        // Display User ID
+        peer.on('open', id => document.getElementById('my-id').innerText = id);
+
+        // Receive Call
+        peer.on('call', call => {
+            navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(stream => {
+                localVideo.srcObject = stream;
+                call.answer(stream);
+                call.on('stream', remoteStream => remoteVideo.srcObject = remoteStream);
+            });
+        });
+
+        // Start Call Function
+        function startCall() {
+            const id = document.getElementById('remote-id').value;
+            navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(stream => {
+                localVideo.srcObject = stream;
+                const call = peer.call(id, stream);
+                call.on('stream', remoteStream => remoteVideo.srcObject = remoteStream);
+            });
+        }
+
+        function sendMsg() {
+            const msg = document.getElementById('msg-input').value;
+            const chatBox = document.getElementById('chat-box');
+            if(msg) {
+                chatBox.innerHTML += `<div class="text-white">> YOU: ${msg}</div>`;
+                document.getElementById('msg-input').value = '';
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+        }
+    </script>
+</body>
+</html>
