@@ -7,23 +7,52 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { background-color: #050505; color: white; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
+        body { background-color: #050505; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; margin: 0; }
+        
+        /* Splash Screen Animation */
+        #splash-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: black; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 9999;
+            transition: opacity 1s ease-out;
+        }
+        .blinking-logo {
+            font-size: 5rem; font-weight: 900; color: #FF0033;
+            letter-spacing: -5px; font-style: italic;
+            animation: blink 0.8s infinite secondary;
+            text-shadow: 0 0 20px rgba(255, 0, 51, 0.7);
+        }
+        @keyframes blink { 
+            0%, 100% { opacity: 1; } 
+            50% { opacity: 0.1; } 
+        }
+        .loading-bar { width: 200px; height: 2px; background: #222; margin-top: 20px; overflow: hidden; }
+        .loading-progress { width: 100%; height: 100%; background: #FF0033; animation: load 2.5s ease-in-out forwards; }
+        @keyframes load { 0% { transform: translateX(-100%); } 100% { transform: translateX(0); } }
+
+        /* Main UI Styles */
         .gaming-border { border: 2px solid #FF0033; clip-path: polygon(5% 0, 100% 0, 100% 90%, 95% 100%, 0 100%, 0 10%); }
         .sharp-panel { background: rgba(20, 20, 20, 0.9); border: 1px solid rgba(255, 0, 51, 0.3); }
         video { width: 100%; border-radius: 4px; background: #111; transform: scaleX(-1); border: 1px solid #333; }
         .screen-share video { transform: none !important; }
         .glow-text { text-shadow: 0 0 10px rgba(255, 0, 51, 0.7); }
-        ::selection { background: #FF0033; color: white; }
     </style>
 </head>
 <body>
-    <div class="max-w-6xl mx-auto p-6">
+
+    <div id="splash-screen">
+        <div class="blinking-logo">BARTA</div>
+        <div class="text-[10px] tracking-[0.5em] text-zinc-500 mt-4 uppercase">Initializing Secure Protocol</div>
+        <div class="loading-bar"><div class="loading-progress"></div></div>
+    </div>
+
+    <div id="main-content" class="max-w-6xl mx-auto p-6 opacity-0 transition-opacity duration-1000">
         <header class="flex justify-between items-center mb-8 border-b-2 border-red-600 pb-4">
             <h1 class="text-4xl font-black tracking-tighter text-red-600 glow-text italic">BARTA</h1>
             <div class="text-right">
                 <p class="text-xs text-gray-400 uppercase">Status: <span id="status" class="text-yellow-500">Offline</span></p>
                 <div class="flex items-center gap-2 justify-end">
-                    <p id="display-id" class="font-mono text-white font-bold">No ID</p>
+                    <p id="display-id" class="font-mono text-white font-bold uppercase">No ID</p>
                     <button id="copy-btn" onclick="copyId()" class="hidden text-[10px] bg-zinc-800 px-2 py-1 hover:bg-zinc-700">COPY</button>
                 </div>
             </div>
@@ -33,32 +62,32 @@
             <div class="col-span-12 md:col-span-4 lg:col-span-3 space-y-4">
                 <div class="sharp-panel p-4">
                     <h3 class="text-xs uppercase font-bold text-red-500 mb-3 tracking-widest underline">1. User Identity</h3>
-                    <input id="my-custom-id" type="text" placeholder="Enter Secret Code" class="w-full bg-black border border-zinc-800 p-2 mb-2 text-sm focus:border-red-600 outline-none text-white font-mono">
+                    <input id="my-custom-id" type="text" placeholder="Your Secret Code" class="w-full bg-black border border-zinc-800 p-2 mb-2 text-sm focus:border-red-600 outline-none text-white font-mono uppercase">
                     <button onclick="initializePeer()" class="w-full bg-white text-black hover:bg-red-600 hover:text-white font-bold py-2 transition uppercase text-xs">Authorize ID</button>
                 </div>
                 <div class="sharp-panel p-4">
                     <h3 class="text-xs uppercase font-bold text-red-500 mb-3 tracking-widest underline">2. Comms Link</h3>
-                    <input id="remote-id" type="text" placeholder="Recipient Code" class="w-full bg-black border border-zinc-800 p-2 mb-2 text-sm focus:border-red-600 outline-none text-white font-mono">
+                    <input id="remote-id" type="text" placeholder="Friend's Code" class="w-full bg-black border border-zinc-800 p-2 mb-2 text-sm focus:border-red-600 outline-none text-white font-mono uppercase">
                     <button onclick="startCall('video')" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 transition uppercase text-xs mb-2">Start Camera</button>
                     <button onclick="startCall('screen')" class="w-full bg-zinc-100 text-black hover:bg-zinc-300 font-bold py-2 transition uppercase text-xs mb-4">Stream Screen</button>
-                    <button onclick="endCall()" class="w-full border border-red-600 text-red-600 hover:bg-red-600 hover:text-white font-bold py-2 transition uppercase text-xs">Terminate Call</button>
+                    <button onclick="endCall()" class="w-full border border-red-600 text-red-600 hover:bg-red-600 hover:text-white font-bold py-2 transition uppercase text-xs">Terminate</button>
                 </div>
             </div>
 
             <div class="col-span-12 md:col-span-8 lg:col-span-9">
                 <div class="gaming-border p-4 bg-zinc-900/40">
-                    <div id="video-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         <div class="relative">
-                            <p class="absolute top-2 left-2 z-10 text-[10px] bg-red-600 px-2 font-bold uppercase">Local</p>
+                            <p id="local-label" class="absolute top-2 left-2 z-10 text-[10px] bg-red-600 px-2 font-bold uppercase">LOCAL_FEED</p>
                             <video id="local-video" autoplay muted playsinline></video>
                         </div>
                         <div class="relative screen-share">
-                            <p class="absolute top-2 left-2 z-10 text-[10px] bg-zinc-800 px-2 font-bold text-white uppercase">Remote</p>
+                            <p id="remote-label" class="absolute top-2 left-2 z-10 text-[10px] bg-zinc-800 px-2 font-bold text-white uppercase">REMOTE_FEED</p>
                             <video id="remote-video" autoplay playsinline></video>
                         </div>
                     </div>
                     <div id="chat-box" class="h-48 overflow-y-auto bg-black border border-zinc-800 p-4 mb-4 font-mono text-xs text-green-500 border-l-4 border-l-red-600">
-                        <div>> SYSTEM: STANDBY... Awaiting user authorization.</div>
+                        <div>> SYSTEM: STANDBY... Please initialize ID.</div>
                     </div>
                     <div class="flex gap-2">
                         <input id="msg-input" type="text" placeholder="Type secure message..." class="flex-1 bg-black border border-zinc-800 p-3 text-sm outline-none focus:border-red-600 text-white">
@@ -68,32 +97,39 @@
             </div>
         </div>
         <footer class="mt-8 text-[10px] text-zinc-600 flex justify-between uppercase tracking-widest border-t border-zinc-900 pt-4">
-            <span>Barta Secure Protocol v3.0</span>
-            <span>Created by: Babai</span>
+            <span>Barta Protocol v4.0</span>
+            <span>© 2026 Babai</span>
         </footer>
     </div>
 
     <script>
+        // Start-up sequence
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                const main = document.getElementById('main-content');
+                splash.style.opacity = '0';
+                main.style.opacity = '1';
+                setTimeout(() => splash.style.display = 'none', 1000);
+            }, 3000); // 3 seconds splash screen
+        });
+
         let peer = null, currentCall = null, dataConn = null, localStream = null;
         const chatBox = document.getElementById('chat-box');
-
-        // Audio SFX Synthesis
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
         function playSound(freq, type, duration) {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
             gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
         }
 
-        const notifySnd = () => playSound(880, 'sine', 0.2); // Message Beep
-        const connectSnd = () => { playSound(440, 'square', 0.1); setTimeout(()=>playSound(660, 'square', 0.1), 100); }; // Connect Sound
+        const notifySnd = () => playSound(880, 'sine', 0.2);
+        const connectSnd = () => { playSound(440, 'square', 0.1); setTimeout(()=>playSound(660, 'square', 0.1), 100); };
 
         function log(msg, color = "text-green-500") {
             chatBox.innerHTML += `<div class="${color}">> ${msg}</div>`;
@@ -102,31 +138,34 @@
 
         function copyId() {
             navigator.clipboard.writeText(document.getElementById('display-id').innerText);
-            log("ID copied to clipboard.");
+            log("ID copied.");
         }
 
         function initializePeer() {
-            const customId = document.getElementById('my-custom-id').value.trim();
+            const customId = document.getElementById('my-custom-id').value.trim().toUpperCase();
             if (!customId) return alert("Enter a Secret Code!");
             if (peer) peer.destroy();
+            
             peer = new Peer(customId);
-
             peer.on('open', id => {
                 document.getElementById('display-id').innerText = id;
+                document.getElementById('local-label').innerText = id; // Set local window name
                 document.getElementById('status').innerText = "ONLINE";
                 document.getElementById('status').className = "text-green-500";
                 document.getElementById('copy-btn').classList.remove('hidden');
-                log(`Authorization Successful. ID: ${id}`);
+                log(`Authorized as: ${id}`);
                 connectSnd();
             });
 
             peer.on('connection', conn => {
                 dataConn = conn;
+                document.getElementById('remote-label').innerText = conn.peer; // Set remote window name
                 setupDataHandlers();
             });
 
             peer.on('call', call => {
-                log("Incoming stream detected.", "text-yellow-500");
+                log(`Incoming stream from ${call.peer}`, "text-yellow-500");
+                document.getElementById('remote-label').innerText = call.peer;
                 notifySnd();
                 navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(stream => {
                     localStream = stream;
@@ -141,15 +180,16 @@
         function setupDataHandlers() {
             dataConn.on('open', () => log("Secure Data Channel: OPEN", "text-blue-400"));
             dataConn.on('data', data => {
-                log(`FRIEND: ${data}`, "text-red-400");
+                log(`${dataConn.peer}: ${data}`, "text-red-400");
                 notifySnd();
             });
         }
 
         async function startCall(type) {
-            const rid = document.getElementById('remote-id').value.trim();
+            const rid = document.getElementById('remote-id').value.trim().toUpperCase();
             if (!rid) return alert("Enter recipient code!");
 
+            document.getElementById('remote-label').innerText = rid;
             dataConn = peer.connect(rid);
             setupDataHandlers();
 
@@ -165,7 +205,7 @@
                     document.getElementById('remote-video').srcObject = rs;
                     connectSnd();
                 });
-                log("Link established.");
+                log(`Linking with ${rid}...`);
             } catch (err) { log("Error: " + err.message, "text-red-500"); }
         }
 
@@ -184,7 +224,8 @@
             if (localStream) localStream.getTracks().forEach(t => t.stop());
             document.getElementById('local-video').srcObject = null;
             document.getElementById('remote-video').srcObject = null;
-            log("CHANNEL CLOSED.", "text-red-500");
+            document.getElementById('remote-label').innerText = "REMOTE_FEED";
+            log("SESSION TERMINATED.", "text-red-500");
         }
     </script>
 </body>
