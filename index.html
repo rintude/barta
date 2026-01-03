@@ -30,7 +30,7 @@
         @keyframes load { 0% { transform: translateX(-100%); } 100% { transform: translateX(0); } }
         .gaming-border { border: 2px solid #FF0033; clip-path: polygon(5% 0, 100% 0, 100% 90%, 95% 100%, 0 100%, 0 10%); }
         .sharp-panel { background: rgba(20, 20, 20, 0.9); border: 1px solid rgba(255, 0, 51, 0.3); }
-        video { width: 100%; border-radius: 4px; background: #111; transform: scaleX(-1); border: 1px solid #333; height: 200px; object-fit: cover; }
+        video { width: 100%; border-radius: 4px; background: #111; transform: scaleX(-1); border: 1px solid #333; height: 220px; object-fit: cover; }
         .screen-share video { transform: none !important; }
         body.loading { overflow: hidden !important; height: 100vh; }
     </style>
@@ -48,22 +48,22 @@
             <h1 class="text-3xl md:text-4xl font-black tracking-tighter text-red-600 italic">BARTA</h1>
             <div class="text-right">
                 <p class="text-[10px] text-gray-400 uppercase">Status: <span id="status" class="text-yellow-500">Offline</span></p>
-                <p id="display-id" class="font-mono text-white text-sm font-bold uppercase">No ID</p>
+                <p id="display-id" class="font-mono text-white text-sm font-bold uppercase underline tracking-widest">Awaiting ID</p>
             </div>
         </header>
 
         <div class="grid grid-cols-12 gap-6">
             <div class="col-span-12 md:col-span-4 lg:col-span-3 space-y-4">
                 <div class="sharp-panel p-4">
-                    <h3 class="text-xs uppercase font-bold text-red-500 mb-3 underline">1. User Identity</h3>
-                    <input id="my-custom-id" type="text" placeholder="Your Code" class="w-full bg-black border border-zinc-800 p-2 mb-2 text-sm text-white uppercase outline-none focus:border-red-600">
-                    <button onclick="initializePeer()" class="w-full bg-white text-black hover:bg-red-600 hover:text-white font-bold py-2 transition uppercase text-xs">Authorize</button>
+                    <h3 class="text-xs uppercase font-bold text-red-500 mb-3 underline tracking-widest">1. Set My Identity</h3>
+                    <input id="my-custom-id" type="text" placeholder="Enter My Code" class="w-full bg-black border border-zinc-800 p-2 mb-2 text-sm text-white uppercase outline-none focus:border-red-600 font-mono">
+                    <button onclick="initializePeer()" class="w-full bg-white text-black hover:bg-red-600 hover:text-white font-bold py-2 transition uppercase text-xs">Authorize My ID</button>
                 </div>
                 <div class="sharp-panel p-4">
-                    <h3 class="text-xs uppercase font-bold text-red-500 mb-3 underline">2. Comms Link</h3>
-                    <input id="remote-id" type="text" placeholder="Friend's Code" class="w-full bg-black border border-zinc-800 p-2 mb-2 text-sm text-white uppercase outline-none">
-                    <button onclick="startCall('video')" class="w-full bg-red-600 text-white font-bold py-2 uppercase text-xs mb-2">Start Call</button>
-                    <button onclick="endCall()" class="w-full border border-red-600 text-red-600 font-bold py-2 uppercase text-xs">Terminate</button>
+                    <h3 class="text-xs uppercase font-bold text-red-500 mb-3 underline tracking-widest">2. Link To Friend</h3>
+                    <input id="remote-id" type="text" placeholder="Friend's Code" class="w-full bg-black border border-zinc-800 p-2 mb-2 text-sm text-white uppercase outline-none font-mono">
+                    <button onclick="startCall('video')" class="w-full bg-red-600 text-white font-bold py-2 uppercase text-xs mb-2 shadow-lg shadow-red-900/20 hover:bg-red-500">Establish Link</button>
+                    <button onclick="endCall()" class="w-full border border-red-600 text-red-600 font-bold py-2 uppercase text-xs hover:bg-red-600 hover:text-white transition">Terminate</button>
                 </div>
             </div>
 
@@ -71,26 +71,27 @@
                 <div class="gaming-border p-4 bg-zinc-900/40">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         <div class="relative">
-                            <p id="local-label" class="absolute top-2 left-2 z-10 text-[10px] bg-red-600 px-2 font-bold uppercase font-mono">LOCAL</p>
+                            <p id="local-label" class="absolute top-2 left-2 z-10 text-[10px] bg-red-600 px-2 font-bold uppercase font-mono tracking-tighter">LOCAL_FEED</p>
                             <video id="local-video" autoplay muted playsinline></video>
                         </div>
                         <div class="relative">
-                            <p id="remote-label" class="absolute top-2 left-2 z-10 text-[10px] bg-zinc-800 px-2 font-bold text-white uppercase font-mono">REMOTE</p>
+                            <p id="remote-label" class="absolute top-2 left-2 z-10 text-[10px] bg-zinc-800 px-2 font-bold text-white uppercase font-mono tracking-tighter">REMOTE_FEED</p>
                             <video id="remote-video" autoplay playsinline></video>
                         </div>
                     </div>
                     <div id="chat-box" class="h-48 overflow-y-auto bg-black border border-zinc-800 p-4 mb-4 font-mono text-xs text-green-500 border-l-4 border-l-red-600">
-                        <div>> SYSTEM: STANDBY...</div>
+                        <div>> SYSTEM: STANDBY. ENTER IDENTITY TO START.</div>
                     </div>
                     <form onsubmit="event.preventDefault(); sendMsg();" class="flex gap-2">
-                        <input id="msg-input" type="text" placeholder="Type message..." class="flex-1 bg-black border border-zinc-800 p-3 text-sm text-white outline-none">
-                        <button type="submit" class="bg-red-600 px-6 font-black italic">SEND</button>
+                        <input id="msg-input" type="text" placeholder="Enter encrypted message..." class="flex-1 bg-black border border-zinc-800 p-3 text-sm text-white outline-none focus:border-red-600">
+                        <button type="submit" class="bg-red-600 px-8 font-black italic hover:bg-red-500 transition">SEND</button>
                     </form>
                 </div>
             </div>
         </div>
         <footer class="mt-8 text-[10px] text-zinc-600 flex justify-between uppercase border-t border-zinc-900 pt-4 pb-12">
-            <span>Barta Final | © 2026 Babai</span>
+            <span>Barta V6 | P2P Protocol</span>
+            <span>Created by: Babai</span>
         </footer>
     </div>
 
@@ -114,24 +115,24 @@
 
         function initializePeer() {
             const id = document.getElementById('my-custom-id').value.trim().toUpperCase();
-            if (!id) return;
+            if (!id) return alert("Please enter your secret identity code!");
+            
             peer = new Peer(id);
             peer.on('open', () => {
                 document.getElementById('display-id').innerText = id;
-                document.getElementById('local-label').innerText = id;
+                document.getElementById('local-label').innerText = id; // User Identity as Local Window Name
                 document.getElementById('status').innerText = "ONLINE";
-                log("AUTHORIZED: " + id);
+                log("IDENTITY AUTHORIZED: " + id);
             });
 
-            // Handle Incoming
             peer.on('connection', conn => {
                 dataConn = conn;
-                document.getElementById('remote-label').innerText = conn.peer;
+                document.getElementById('remote-label').innerText = conn.peer; // Friend Identity as Remote Window Name
                 setupDataHandlers();
             });
 
             peer.on('call', call => {
-                document.getElementById('remote-label').innerText = call.peer;
+                document.getElementById('remote-label').innerText = call.peer; // Friend Identity as Remote Window Name
                 navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(stream => {
                     localStream = stream;
                     document.getElementById('local-video').srcObject = stream;
@@ -149,15 +150,13 @@
 
         async function startCall() {
             const rid = document.getElementById('remote-id').value.trim().toUpperCase();
-            if (!rid) return;
+            if (!rid) return alert("Enter the recipient's code!");
             
             document.getElementById('remote-label').innerText = rid;
             
-            // Connect Text
             dataConn = peer.connect(rid);
             setupDataHandlers();
 
-            // Connect Video
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
                 document.getElementById('local-video').srcObject = localStream;
@@ -165,8 +164,8 @@
                 call.on('stream', rs => {
                     document.getElementById('remote-video').srcObject = rs;
                 });
-                log("LINKING TO: " + rid);
-            } catch (err) { log("ERR: " + err.message); }
+                log("ESTABLISHING LINK TO: " + rid);
+            } catch (err) { log("ERR: " + err.message, "text-red-500"); }
         }
 
         function sendMsg() {
@@ -176,8 +175,6 @@
                 dataConn.send(msg);
                 log("YOU: " + msg, "text-white");
                 input.value = '';
-            } else {
-                log("NOT CONNECTED", "text-yellow-500");
             }
         }
 
@@ -185,7 +182,8 @@
             if (localStream) localStream.getTracks().forEach(t => t.stop());
             document.getElementById('local-video').srcObject = null;
             document.getElementById('remote-video').srcObject = null;
-            log("ENDED");
+            document.getElementById('remote-label').innerText = "REMOTE_FEED";
+            log("CONNECTION TERMINATED.");
         }
     </script>
 </body>
