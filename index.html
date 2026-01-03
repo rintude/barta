@@ -8,17 +8,12 @@
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         body { background-color: #050505; color: white; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
-        .gaming-border {
-            border: 2px solid #FF0033;
-            clip-path: polygon(5% 0, 100% 0, 100% 90%, 95% 100%, 0 100%, 0 10%);
-        }
-        .sharp-panel {
-            background: rgba(20, 20, 20, 0.9);
-            border: 1px solid rgba(255, 0, 51, 0.3);
-        }
+        .gaming-border { border: 2px solid #FF0033; clip-path: polygon(5% 0, 100% 0, 100% 90%, 95% 100%, 0 100%, 0 10%); }
+        .sharp-panel { background: rgba(20, 20, 20, 0.9); border: 1px solid rgba(255, 0, 51, 0.3); }
         video { width: 100%; border-radius: 4px; background: #111; transform: scaleX(-1); border: 1px solid #333; }
-        .screen-share video { transform: none !important; } /* Screen share shouldn't be mirrored */
+        .screen-share video { transform: none !important; }
         .glow-text { text-shadow: 0 0 10px rgba(255, 0, 51, 0.7); }
+        ::selection { background: #FF0033; color: white; }
     </style>
 </head>
 <body>
@@ -38,13 +33,12 @@
             <div class="col-span-12 md:col-span-4 lg:col-span-3 space-y-4">
                 <div class="sharp-panel p-4">
                     <h3 class="text-xs uppercase font-bold text-red-500 mb-3 tracking-widest underline">1. User Identity</h3>
-                    <input id="my-custom-id" type="text" placeholder="Enter Secret Code" class="w-full bg-black border border-zinc-800 p-2 mb-2 text-sm focus:border-red-600 outline-none text-white">
+                    <input id="my-custom-id" type="text" placeholder="Enter Secret Code" class="w-full bg-black border border-zinc-800 p-2 mb-2 text-sm focus:border-red-600 outline-none text-white font-mono">
                     <button onclick="initializePeer()" class="w-full bg-white text-black hover:bg-red-600 hover:text-white font-bold py-2 transition uppercase text-xs">Authorize ID</button>
                 </div>
-
                 <div class="sharp-panel p-4">
                     <h3 class="text-xs uppercase font-bold text-red-500 mb-3 tracking-widest underline">2. Comms Link</h3>
-                    <input id="remote-id" type="text" placeholder="Recipient Code" class="w-full bg-black border border-zinc-800 p-2 mb-2 text-sm focus:border-red-600 outline-none">
+                    <input id="remote-id" type="text" placeholder="Recipient Code" class="w-full bg-black border border-zinc-800 p-2 mb-2 text-sm focus:border-red-600 outline-none text-white font-mono">
                     <button onclick="startCall('video')" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 transition uppercase text-xs mb-2">Start Camera</button>
                     <button onclick="startCall('screen')" class="w-full bg-zinc-100 text-black hover:bg-zinc-300 font-bold py-2 transition uppercase text-xs mb-4">Stream Screen</button>
                     <button onclick="endCall()" class="w-full border border-red-600 text-red-600 hover:bg-red-600 hover:text-white font-bold py-2 transition uppercase text-xs">Terminate Call</button>
@@ -63,29 +57,43 @@
                             <video id="remote-video" autoplay playsinline></video>
                         </div>
                     </div>
-                    
-                    <div id="chat-box" class="h-32 overflow-y-auto bg-black border border-zinc-800 p-4 mb-4 font-mono text-xs text-green-500">
+                    <div id="chat-box" class="h-48 overflow-y-auto bg-black border border-zinc-800 p-4 mb-4 font-mono text-xs text-green-500 border-l-4 border-l-red-600">
                         <div>> SYSTEM: STANDBY... Awaiting user authorization.</div>
                     </div>
                     <div class="flex gap-2">
-                        <input id="msg-input" type="text" placeholder="Type secure message..." class="flex-1 bg-black border border-zinc-800 p-3 text-sm outline-none focus:border-red-600">
+                        <input id="msg-input" type="text" placeholder="Type secure message..." class="flex-1 bg-black border border-zinc-800 p-3 text-sm outline-none focus:border-red-600 text-white">
                         <button onclick="sendMsg()" class="bg-red-600 px-6 font-black italic hover:bg-red-500">SEND</button>
                     </div>
                 </div>
             </div>
         </div>
-
         <footer class="mt-8 text-[10px] text-zinc-600 flex justify-between uppercase tracking-widest border-t border-zinc-900 pt-4">
-            <span>Protocol: Peer-to-Peer Encrypted</span>
+            <span>Barta Secure Protocol v3.0</span>
             <span>Created by: Babai</span>
         </footer>
     </div>
 
     <script>
-        let peer = null;
-        let currentCall = null;
-        let localStream = null;
+        let peer = null, currentCall = null, dataConn = null, localStream = null;
         const chatBox = document.getElementById('chat-box');
+
+        // Audio SFX Synthesis
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(freq, type, duration) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        const notifySnd = () => playSound(880, 'sine', 0.2); // Message Beep
+        const connectSnd = () => { playSound(440, 'square', 0.1); setTimeout(()=>playSound(660, 'square', 0.1), 100); }; // Connect Sound
 
         function log(msg, color = "text-green-500") {
             chatBox.innerHTML += `<div class="${color}">> ${msg}</div>`;
@@ -93,15 +101,13 @@
         }
 
         function copyId() {
-            const id = document.getElementById('display-id').innerText;
-            navigator.clipboard.writeText(id);
+            navigator.clipboard.writeText(document.getElementById('display-id').innerText);
             log("ID copied to clipboard.");
         }
 
         function initializePeer() {
             const customId = document.getElementById('my-custom-id').value.trim();
             if (!customId) return alert("Enter a Secret Code!");
-
             if (peer) peer.destroy();
             peer = new Peer(customId);
 
@@ -111,68 +117,74 @@
                 document.getElementById('status').className = "text-green-500";
                 document.getElementById('copy-btn').classList.remove('hidden');
                 log(`Authorization Successful. ID: ${id}`);
+                connectSnd();
+            });
+
+            peer.on('connection', conn => {
+                dataConn = conn;
+                setupDataHandlers();
             });
 
             peer.on('call', call => {
-                log("Incoming transmission... Auto-patching.", "text-yellow-500");
-                const mode = confirm("Accept Incoming Stream?") ? {video: true, audio: true} : null;
-                if(!mode) return;
-
-                navigator.mediaDevices.getUserMedia(mode).then(stream => {
+                log("Incoming stream detected.", "text-yellow-500");
+                notifySnd();
+                navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(stream => {
                     localStream = stream;
                     document.getElementById('local-video').srcObject = stream;
                     call.answer(stream);
                     currentCall = call;
-                    call.on('stream', remoteStream => {
-                        document.getElementById('remote-video').srcObject = remoteStream;
-                    });
+                    call.on('stream', rs => document.getElementById('remote-video').srcObject = rs);
                 });
             });
+        }
 
-            peer.on('error', err => log(`SIGNAL ERROR: ${err.type}`, "text-red-500"));
+        function setupDataHandlers() {
+            dataConn.on('open', () => log("Secure Data Channel: OPEN", "text-blue-400"));
+            dataConn.on('data', data => {
+                log(`FRIEND: ${data}`, "text-red-400");
+                notifySnd();
+            });
         }
 
         async function startCall(type) {
-            const remoteId = document.getElementById('remote-id').value.trim();
-            if (!remoteId) return alert("Enter recipient code!");
+            const rid = document.getElementById('remote-id').value.trim();
+            if (!rid) return alert("Enter recipient code!");
+
+            dataConn = peer.connect(rid);
+            setupDataHandlers();
 
             try {
-                if (type === 'video') {
-                    localStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
-                } else {
-                    localStream = await navigator.mediaDevices.getDisplayMedia({video: true});
-                    log("Screen capture initiated.");
-                }
+                localStream = type === 'video' ? 
+                    await navigator.mediaDevices.getUserMedia({video: true, audio: true}) : 
+                    await navigator.mediaDevices.getDisplayMedia({video: true});
                 
                 document.getElementById('local-video').srcObject = localStream;
-                const call = peer.call(remoteId, localStream);
+                const call = peer.call(rid, localStream);
                 currentCall = call;
-                
-                call.on('stream', remoteStream => {
-                    document.getElementById('remote-video').srcObject = remoteStream;
-                    log("Link established. Secure channel open.");
+                call.on('stream', rs => {
+                    document.getElementById('remote-video').srcObject = rs;
+                    connectSnd();
                 });
-            } catch (err) {
-                log("Media Error: " + err.message, "text-red-500");
+                log("Link established.");
+            } catch (err) { log("Error: " + err.message, "text-red-500"); }
+        }
+
+        function sendMsg() {
+            const msg = document.getElementById('msg-input').value;
+            if(msg && dataConn && dataConn.open) {
+                dataConn.send(msg);
+                log(`YOU: ${msg}`, "text-white");
+                document.getElementById('msg-input').value = '';
             }
         }
 
         function endCall() {
             if (currentCall) currentCall.close();
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-            }
+            if (dataConn) dataConn.close();
+            if (localStream) localStream.getTracks().forEach(t => t.stop());
             document.getElementById('local-video').srcObject = null;
             document.getElementById('remote-video').srcObject = null;
             log("CHANNEL CLOSED.", "text-red-500");
-        }
-
-        function sendMsg() {
-            const msg = document.getElementById('msg-input').value;
-            if(msg) {
-                log(`YOU: ${msg}`, "text-white");
-                document.getElementById('msg-input').value = '';
-            }
         }
     </script>
 </body>
