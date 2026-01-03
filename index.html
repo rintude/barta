@@ -29,6 +29,7 @@
         .sharp-panel { background: rgba(20, 20, 20, 0.9); border: 1px solid rgba(255, 0, 51, 0.3); }
         video { width: 100%; border-radius: 4px; background: #111; transform: scaleX(-1); border: 1px solid #333; height: 220px; object-fit: cover; }
         body.loading { overflow: hidden !important; height: 100vh; }
+        .file-preview { max-width: 200px; border-radius: 4px; margin-top: 5px; border: 1px solid #444; }
     </style>
 </head>
 <body class="loading">
@@ -50,15 +51,15 @@
         <div class="grid grid-cols-12 gap-6">
             <div class="col-span-12 md:col-span-4 lg:col-span-3 space-y-4">
                 <div class="sharp-panel p-4">
-                    <h3 class="text-xs uppercase font-bold text-red-500 mb-3 underline">1. Set My Identity</h3>
+                    <h3 class="text-xs uppercase font-bold text-red-500 mb-3 underline tracking-widest">1. Set My Identity</h3>
                     <input id="my-custom-id" type="text" placeholder="Enter My Code" class="w-full bg-black border border-zinc-800 p-2 mb-2 text-sm text-white uppercase outline-none focus:border-red-600 font-mono">
                     <button id="auth-btn" onclick="initializePeer()" class="w-full bg-white text-black hover:bg-red-600 hover:text-white font-bold py-2 transition uppercase text-xs">Authorize My ID</button>
                 </div>
                 <div class="sharp-panel p-4">
-                    <h3 class="text-xs uppercase font-bold text-red-500 mb-3 underline">2. Link To Friend</h3>
+                    <h3 class="text-xs uppercase font-bold text-red-500 mb-3 underline tracking-widest">2. Link To Friend</h3>
                     <input id="remote-id" type="text" placeholder="Friend's Code" class="w-full bg-black border border-zinc-800 p-2 mb-2 text-sm text-white uppercase outline-none font-mono">
-                    <button onclick="startCall()" class="w-full bg-red-600 text-white font-bold py-2 uppercase text-xs mb-2 hover:bg-red-500">Establish Link</button>
-                    <button onclick="endCall()" class="w-full border border-red-600 text-red-600 font-bold py-2 uppercase text-xs hover:bg-red-600 hover:text-white">Terminate</button>
+                    <button onclick="startCall()" class="w-full bg-red-600 text-white font-bold py-2 uppercase text-xs mb-2 hover:bg-red-500 transition">Establish Link</button>
+                    <button onclick="endCall()" class="w-full border border-red-600 text-red-600 font-bold py-2 uppercase text-xs hover:bg-red-600 hover:text-white transition">Terminate</button>
                 </div>
             </div>
 
@@ -66,28 +67,37 @@
                 <div class="gaming-border p-4 bg-zinc-900/40">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         <div class="relative">
-                            <p id="local-label" class="absolute top-2 left-2 z-10 text-[10px] bg-red-600 px-2 font-bold uppercase font-mono">LOCAL_FEED</p>
+                            <p id="local-label" class="absolute top-2 left-2 z-10 text-[10px] bg-red-600 px-2 font-bold uppercase font-mono tracking-tighter">LOCAL_FEED</p>
                             <video id="local-video" autoplay muted playsinline></video>
                         </div>
                         <div class="relative">
-                            <p id="remote-label" class="absolute top-2 left-2 z-10 text-[10px] bg-zinc-800 px-2 font-bold text-white uppercase font-mono">REMOTE_FEED</p>
+                            <p id="remote-label" class="absolute top-2 left-2 z-10 text-[10px] bg-zinc-800 px-2 font-bold text-white uppercase font-mono tracking-tighter">REMOTE_FEED</p>
                             <video id="remote-video" autoplay playsinline></video>
                         </div>
                     </div>
                     <div id="chat-box" class="h-48 overflow-y-auto bg-black border border-zinc-800 p-4 mb-4 font-mono text-xs text-green-500 border-l-4 border-l-red-600">
                         <div>> SYSTEM: BOOT COMPLETE.</div>
                     </div>
-                    <form onsubmit="event.preventDefault(); sendMsg();" class="flex gap-2">
-                        <input id="msg-input" type="text" placeholder="Message..." class="flex-1 bg-black border border-zinc-800 p-3 text-sm text-white outline-none focus:border-red-600">
-                        <button type="submit" class="bg-red-600 px-8 font-black italic hover:bg-red-500">SEND</button>
-                    </form>
+                    <div class="flex items-center gap-2 bg-black border border-zinc-800 p-2">
+                        <label class="cursor-pointer bg-zinc-800 hover:bg-zinc-700 p-2 rounded">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                            <input type="file" id="file-input" class="hidden" onchange="sendFile()">
+                        </label>
+                        <input id="msg-input" type="text" placeholder="Message..." class="flex-1 bg-transparent text-sm text-white outline-none" onkeypress="if(event.key==='Enter') sendMsg()">
+                        <button onclick="sendMsg()" class="bg-red-600 px-6 py-2 font-black italic hover:bg-red-500 transition text-sm">SEND</button>
+                    </div>
                 </div>
             </div>
         </div>
+        <footer class="mt-8 text-[10px] text-zinc-600 flex justify-between uppercase border-t border-zinc-900 pt-4 pb-12">
+            <span>Barta V7 | Media-Ready</span>
+            <span>Created by: Babai</span>
+        </footer>
     </div>
 
     <script>
-        // Splash screen removal
         window.onload = () => {
             setTimeout(() => {
                 document.getElementById('splash-screen').style.display = 'none';
@@ -98,97 +108,121 @@
 
         let peer = null, dataConn = null, localStream = null;
 
-        function log(msg, color = "text-green-500") {
+        function log(msg, color = "text-green-500", isMedia = false) {
             const chatBox = document.getElementById('chat-box');
-            chatBox.innerHTML += `<div class="${color}">> ${msg}</div>`;
+            const div = document.createElement('div');
+            div.className = color;
+            div.innerHTML = `> ${msg}`;
+            chatBox.appendChild(div);
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
         async function initializePeer() {
             const btn = document.getElementById('auth-btn');
-            const idInput = document.getElementById('my-custom-id');
-            const id = idInput.value.trim().toUpperCase();
-
-            if (!id) {
-                alert("Identity Code Required.");
-                return;
-            }
-
-            // Visual feedback
+            const id = document.getElementById('my-custom-id').value.trim().toUpperCase();
+            if (!id) return alert("Code Required.");
             btn.innerText = "AUTHORIZING...";
             btn.disabled = true;
 
-            try {
-                // Check if PeerJS is actually loaded
-                if (typeof Peer === 'undefined') {
-                    throw new Error("PeerJS Library not loaded. Check internet.");
-                }
+            peer = new Peer(id);
+            peer.on('open', (confirmedId) => {
+                document.getElementById('display-id').innerText = confirmedId;
+                document.getElementById('local-label').innerText = confirmedId;
+                document.getElementById('status').innerText = "ONLINE";
+                document.getElementById('status').className = "text-green-500";
+                btn.innerText = "AUTHORIZED";
+                log("IDENTITY SECURED: " + confirmedId);
+            });
 
-                if (peer) peer.destroy();
+            peer.on('connection', conn => {
+                dataConn = conn;
+                document.getElementById('remote-label').innerText = conn.peer;
+                setupDataHandlers();
+            });
 
-                peer = new Peer(id);
-
-                peer.on('open', (confirmedId) => {
-                    document.getElementById('display-id').innerText = confirmedId;
-                    document.getElementById('local-label').innerText = confirmedId;
-                    document.getElementById('status').innerText = "ONLINE";
-                    document.getElementById('status').className = "text-green-500";
-                    btn.innerText = "AUTHORIZED";
-                    btn.className = "w-full bg-green-600 text-white font-bold py-2 uppercase text-xs";
-                    log("IDENTITY SECURED: " + confirmedId);
+            peer.on('call', call => {
+                document.getElementById('remote-label').innerText = call.peer;
+                navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(stream => {
+                    localStream = stream;
+                    document.getElementById('local-video').srcObject = stream;
+                    call.answer(stream);
+                    call.on('stream', rs => document.getElementById('remote-video').srcObject = rs);
                 });
-
-                peer.on('error', (err) => {
-                    console.error(err);
-                    btn.innerText = "RETRY AUTHORIZE";
-                    btn.disabled = false;
-                    log("ERROR: " + err.type, "text-red-500");
-                    if(err.type === 'unavailable-id') alert("ID already taken!");
-                });
-
-                peer.on('connection', conn => {
-                    dataConn = conn;
-                    document.getElementById('remote-label').innerText = conn.peer;
-                    setupDataHandlers();
-                });
-
-                peer.on('call', call => {
-                    document.getElementById('remote-label').innerText = call.peer;
-                    navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(stream => {
-                        localStream = stream;
-                        document.getElementById('local-video').srcObject = stream;
-                        call.answer(stream);
-                        call.on('stream', rs => document.getElementById('remote-video').srcObject = rs);
-                    });
-                });
-
-            } catch (e) {
-                alert(e.message);
-                btn.innerText = "AUTHORIZE MY ID";
-                btn.disabled = false;
-            }
+            });
         }
 
         function setupDataHandlers() {
-            dataConn.on('data', data => log(`${dataConn.peer}: ${data}`, "text-red-400"));
-            dataConn.on('open', () => log("DATA CHANNEL OPENED", "text-blue-400"));
+            dataConn.on('data', data => {
+                if (data.file) {
+                    handleIncomingFile(data);
+                } else {
+                    log(`${dataConn.peer}: ${data}`, "text-red-400");
+                }
+            });
+        }
+
+        async function sendFile() {
+            const fileInput = document.getElementById('file-input');
+            const file = fileInput.files[0];
+            if (!file || !dataConn) return;
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                const fileData = {
+                    file: reader.result,
+                    fileName: file.name,
+                    fileType: file.type
+                };
+                dataConn.send(fileData);
+                log(`YOU SENT FILE: ${file.name}`, "text-white");
+                displayFilePreview(fileData, "YOU");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleIncomingFile(data) {
+            log(`${dataConn.peer} SHARED A FILE: ${data.fileName}`, "text-blue-400");
+            displayFilePreview(data, dataConn.peer);
+        }
+
+        function displayFilePreview(data, sender) {
+            const chatBox = document.getElementById('chat-box');
+            const container = document.createElement('div');
+            container.className = "my-2 p-2 border border-zinc-800 bg-zinc-900 rounded";
+            
+            let preview = "";
+            if (data.fileType.startsWith('image/')) {
+                preview = `<img src="${data.file}" class="file-preview">`;
+            } else if (data.fileType.startsWith('audio/')) {
+                preview = `<audio controls src="${data.file}" class="mt-2 w-full"></audio>`;
+            } else if (data.fileType.startsWith('video/')) {
+                preview = `<video controls src="${data.file}" class="file-preview mt-2"></video>`;
+            }
+
+            container.innerHTML = `
+                <div class="text-[10px] text-zinc-500 uppercase font-bold">${sender} SHARED MEDIA</div>
+                ${preview}
+                <div class="mt-2">
+                    <a href="${data.file}" download="${data.fileName}" class="text-xs bg-red-600 px-3 py-1 rounded font-bold text-white hover:bg-red-500">DOWNLOAD</a>
+                </div>
+            `;
+            chatBox.appendChild(container);
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
 
         async function startCall() {
             const rid = document.getElementById('remote-id').value.trim().toUpperCase();
-            if (!rid || !peer) return alert("Authorize yourself and enter friend code!");
-            
+            if (!rid) return;
             document.getElementById('remote-label').innerText = rid;
             dataConn = peer.connect(rid);
             setupDataHandlers();
-
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
                 document.getElementById('local-video').srcObject = localStream;
                 const call = peer.call(rid, localStream);
                 call.on('stream', rs => document.getElementById('remote-video').srcObject = rs);
                 log("LINKING TO: " + rid);
-            } catch (err) { log("MEDIA ERROR: " + err.message, "text-red-500"); }
+            } catch (err) { log("MEDIA ERR: " + err.message, "text-red-500"); }
         }
 
         function sendMsg() {
