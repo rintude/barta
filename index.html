@@ -92,7 +92,7 @@
             </div>
         </div>
         <footer class="mt-8 text-[10px] text-zinc-600 flex justify-between uppercase border-t border-zinc-900 pt-4 pb-12">
-            <span>Barta V7 | Media-Ready</span>
+            <span>Barta V8 | Secure Comms</span>
             <span>Created by: Babai</span>
         </footer>
     </div>
@@ -107,8 +107,23 @@
         };
 
         let peer = null, dataConn = null, localStream = null;
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        function log(msg, color = "text-green-500", isMedia = false) {
+        // Sound Engine
+        function playSfx(freq, type, duration) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
+        }
+        const notifySnd = () => playSfx(880, 'sine', 0.2);
+        const connectSnd = () => { playSfx(440, 'square', 0.1); setTimeout(()=>playSfx(660, 'square', 0.1), 100); };
+
+        function log(msg, color = "text-green-500") {
             const chatBox = document.getElementById('chat-box');
             const div = document.createElement('div');
             div.className = color;
@@ -121,6 +136,7 @@
             const btn = document.getElementById('auth-btn');
             const id = document.getElementById('my-custom-id').value.trim().toUpperCase();
             if (!id) return alert("Code Required.");
+            
             btn.innerText = "AUTHORIZING...";
             btn.disabled = true;
 
@@ -131,6 +147,7 @@
                 document.getElementById('status').innerText = "ONLINE";
                 document.getElementById('status').className = "text-green-500";
                 btn.innerText = "AUTHORIZED";
+                connectSnd();
                 log("IDENTITY SECURED: " + confirmedId);
             });
 
@@ -138,16 +155,30 @@
                 dataConn = conn;
                 document.getElementById('remote-label').innerText = conn.peer;
                 setupDataHandlers();
+                connectSnd();
             });
 
             peer.on('call', call => {
                 document.getElementById('remote-label').innerText = call.peer;
-                navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(stream => {
+                notifySnd();
+                // Secure media access logic
+                navigator.mediaDevices.getUserMedia({video: true, audio: true})
+                .then(stream => {
                     localStream = stream;
                     document.getElementById('local-video').srcObject = stream;
                     call.answer(stream);
                     call.on('stream', rs => document.getElementById('remote-video').srcObject = rs);
+                }).catch(e => {
+                    log("REMOTE STREAM STARTED (No Local Camera)", "text-yellow-500");
+                    call.answer(); // Answer without stream if camera fails
+                    call.on('stream', rs => document.getElementById('remote-video').srcObject = rs);
                 });
+            });
+            
+            peer.on('error', (err) => {
+                btn.disabled = false;
+                btn.innerText = "RETRY AUTHORIZE";
+                log("PEER ERR: " + err.type, "text-red-500");
             });
         }
 
@@ -158,6 +189,7 @@
                 } else {
                     log(`${dataConn.peer}: ${data}`, "text-red-400");
                 }
+                notifySnd();
             });
         }
 
@@ -165,23 +197,18 @@
             const fileInput = document.getElementById('file-input');
             const file = fileInput.files[0];
             if (!file || !dataConn) return;
-
             const reader = new FileReader();
             reader.onload = () => {
-                const fileData = {
-                    file: reader.result,
-                    fileName: file.name,
-                    fileType: file.type
-                };
+                const fileData = { file: reader.result, fileName: file.name, fileType: file.type };
                 dataConn.send(fileData);
-                log(`YOU SENT FILE: ${file.name}`, "text-white");
+                log(`YOU SENT: ${file.name}`, "text-white");
                 displayFilePreview(fileData, "YOU");
             };
             reader.readAsDataURL(file);
         }
 
         function handleIncomingFile(data) {
-            log(`${dataConn.peer} SHARED A FILE: ${data.fileName}`, "text-blue-400");
+            log(`${dataConn.peer} SHARED MEDIA`, "text-blue-400");
             displayFilePreview(data, dataConn.peer);
         }
 
@@ -189,23 +216,11 @@
             const chatBox = document.getElementById('chat-box');
             const container = document.createElement('div');
             container.className = "my-2 p-2 border border-zinc-800 bg-zinc-900 rounded";
-            
             let preview = "";
-            if (data.fileType.startsWith('image/')) {
-                preview = `<img src="${data.file}" class="file-preview">`;
-            } else if (data.fileType.startsWith('audio/')) {
-                preview = `<audio controls src="${data.file}" class="mt-2 w-full"></audio>`;
-            } else if (data.fileType.startsWith('video/')) {
-                preview = `<video controls src="${data.file}" class="file-preview mt-2"></video>`;
-            }
-
-            container.innerHTML = `
-                <div class="text-[10px] text-zinc-500 uppercase font-bold">${sender} SHARED MEDIA</div>
-                ${preview}
-                <div class="mt-2">
-                    <a href="${data.file}" download="${data.fileName}" class="text-xs bg-red-600 px-3 py-1 rounded font-bold text-white hover:bg-red-500">DOWNLOAD</a>
-                </div>
-            `;
+            if (data.fileType.startsWith('image/')) preview = `<img src="${data.file}" class="file-preview">`;
+            else if (data.fileType.startsWith('audio/')) preview = `<audio controls src="${data.file}" class="mt-2 w-full"></audio>`;
+            else if (data.fileType.startsWith('video/')) preview = `<video controls src="${data.file}" class="file-preview mt-2"></video>`;
+            container.innerHTML = `<div class="text-[10px] text-zinc-500 uppercase font-bold">${sender} MEDIA</div>${preview}<div class="mt-2"><a href="${data.file}" download="${data.fileName}" class="text-xs bg-red-600 px-3 py-1 rounded font-bold text-white">DOWNLOAD</a></div>`;
             chatBox.appendChild(container);
             chatBox.scrollTop = chatBox.scrollHeight;
         }
@@ -220,9 +235,12 @@
                 localStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
                 document.getElementById('local-video').srcObject = localStream;
                 const call = peer.call(rid, localStream);
-                call.on('stream', rs => document.getElementById('remote-video').srcObject = rs);
-                log("LINKING TO: " + rid);
-            } catch (err) { log("MEDIA ERR: " + err.message, "text-red-500"); }
+                call.on('stream', rs => { document.getElementById('remote-video').srcObject = rs; connectSnd(); });
+            } catch (err) { 
+                log("CALLING WITHOUT CAMERA", "text-yellow-500");
+                const call = peer.call(rid, new MediaStream()); // Fallback for desktop "Object not found"
+                call.on('stream', rs => { document.getElementById('remote-video').srcObject = rs; connectSnd(); });
+            }
         }
 
         function sendMsg() {
