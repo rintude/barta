@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>BARTA | Secure Gaming Comms</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -12,12 +12,6 @@
             margin: 0; padding: 0; width: 100%; min-height: 100%; overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
         }
-
-        /* FIX: Safe Area Padding for Notch/Camera Displays */
-        #main-content {
-            padding-top: calc(env(safe-area-inset-top) + 1rem);
-        }
-
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: black; display: flex; flex-direction: column;
@@ -57,12 +51,12 @@
         <div class="grid grid-cols-12 gap-6">
             <div class="col-span-12 md:col-span-4 lg:col-span-3 space-y-4">
                 <div class="sharp-panel p-4">
-                    <h3 class="text-xs uppercase font-bold text-red-500 mb-3 tracking-widest">Set My Identity</h3>
+                    <h3 class="text-xs uppercase font-bold text-red-500 mb-3 underline tracking-widest">1. Set My Identity</h3>
                     <input id="my-custom-id" type="text" placeholder="Enter My Code" class="w-full bg-black border border-zinc-800 p-2 mb-2 text-sm text-white uppercase outline-none focus:border-red-600 font-mono">
                     <button id="auth-btn" onclick="initializePeer()" class="w-full bg-white text-black hover:bg-red-600 hover:text-white font-bold py-2 transition uppercase text-xs">Authorize My ID</button>
                 </div>
                 <div class="sharp-panel p-4">
-                    <h3 class="text-xs uppercase font-bold text-red-500 mb-3 tracking-widest">Link To Friend</h3>
+                    <h3 class="text-xs uppercase font-bold text-red-500 mb-3 underline tracking-widest">2. Link To Friend</h3>
                     <input id="remote-id" type="text" placeholder="Friend's Code" class="w-full bg-black border border-zinc-800 p-2 mb-2 text-sm text-white uppercase outline-none font-mono">
                     <button onclick="startCall()" class="w-full bg-red-600 text-white font-bold py-2 uppercase text-xs mb-2 hover:bg-red-500 transition">Establish Link</button>
                     <button onclick="endCall()" class="w-full border border-red-600 text-red-600 font-bold py-2 uppercase text-xs hover:bg-red-600 hover:text-white transition">Terminate</button>
@@ -115,6 +109,7 @@
         let peer = null, dataConn = null, localStream = null;
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+        // Sound Engine
         function playSfx(freq, type, duration) {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -141,8 +136,10 @@
             const btn = document.getElementById('auth-btn');
             const id = document.getElementById('my-custom-id').value.trim().toUpperCase();
             if (!id) return alert("Code Required.");
+            
             btn.innerText = "AUTHORIZING...";
             btn.disabled = true;
+
             peer = new Peer(id);
             peer.on('open', (confirmedId) => {
                 document.getElementById('display-id').innerText = confirmedId;
@@ -153,15 +150,18 @@
                 connectSnd();
                 log("IDENTITY SECURED: " + confirmedId);
             });
+
             peer.on('connection', conn => {
                 dataConn = conn;
                 document.getElementById('remote-label').innerText = conn.peer;
                 setupDataHandlers();
                 connectSnd();
             });
+
             peer.on('call', call => {
                 document.getElementById('remote-label').innerText = call.peer;
                 notifySnd();
+                // Secure media access logic
                 navigator.mediaDevices.getUserMedia({video: true, audio: true})
                 .then(stream => {
                     localStream = stream;
@@ -170,16 +170,25 @@
                     call.on('stream', rs => document.getElementById('remote-video').srcObject = rs);
                 }).catch(e => {
                     log("REMOTE STREAM STARTED (No Local Camera)", "text-yellow-500");
-                    call.answer();
+                    call.answer(); // Answer without stream if camera fails
                     call.on('stream', rs => document.getElementById('remote-video').srcObject = rs);
                 });
+            });
+            
+            peer.on('error', (err) => {
+                btn.disabled = false;
+                btn.innerText = "RETRY AUTHORIZE";
+                log("PEER ERR: " + err.type, "text-red-500");
             });
         }
 
         function setupDataHandlers() {
             dataConn.on('data', data => {
-                if (data.file) handleIncomingFile(data);
-                else log(`${dataConn.peer}: ${data}`, "text-red-400");
+                if (data.file) {
+                    handleIncomingFile(data);
+                } else {
+                    log(`${dataConn.peer}: ${data}`, "text-red-400");
+                }
                 notifySnd();
             });
         }
@@ -229,7 +238,7 @@
                 call.on('stream', rs => { document.getElementById('remote-video').srcObject = rs; connectSnd(); });
             } catch (err) { 
                 log("CALLING WITHOUT CAMERA", "text-yellow-500");
-                const call = peer.call(rid, new MediaStream());
+                const call = peer.call(rid, new MediaStream()); // Fallback for desktop "Object not found"
                 call.on('stream', rs => { document.getElementById('remote-video').srcObject = rs; connectSnd(); });
             }
         }
